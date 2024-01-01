@@ -14,7 +14,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Weather Forecast',
       theme: MaterialTheme(textTheme).theme(MaterialTheme.lightMediumContrastScheme().toColorScheme()),
-      home: const MyHomePage(title: 'Current Weather Forecast'),
+      routes: <String, WidgetBuilder>{
+        '/': (BuildContext context) => const MyHomePage(title: 'Current Weather Forecast'),
+      },
     );
   }
 }
@@ -39,12 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(14.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text('Current weather for your location:', style: titlelarge),
-            ],
-          ),
+          child: Text('Поточна погода у вашій місцевості:', style: titlelarge),
         ),
       ),
     );
