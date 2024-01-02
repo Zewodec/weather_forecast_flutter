@@ -1,14 +1,14 @@
 import 'dart:convert';
 
-class WeatherInfo {
+class WeatherInfoModel {
   Coord coord;
   List<Weather> weather;
-  String base;
+  String? base;
   Main main;
   int visibility;
-  Wind wind;
-  Rain rain;
-  Clouds clouds;
+  Wind? wind;
+  Rain? rain;
+  Clouds? clouds;
   int dt;
   Sys sys;
   int timezone;
@@ -16,15 +16,15 @@ class WeatherInfo {
   String name;
   int cod;
 
-  WeatherInfo({
+  WeatherInfoModel({
     required this.coord,
     required this.weather,
-    required this.base,
+    this.base,
     required this.main,
     required this.visibility,
-    required this.wind,
-    required this.rain,
-    required this.clouds,
+    this.wind,
+    this.rain,
+    this.clouds,
     required this.dt,
     required this.sys,
     required this.timezone,
@@ -33,19 +33,19 @@ class WeatherInfo {
     required this.cod,
   });
 
-  factory WeatherInfo.fromRawJson(String str) => WeatherInfo.fromJson(json.decode(str));
+  factory WeatherInfoModel.fromRawJson(String str) => WeatherInfoModel.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
-  factory WeatherInfo.fromJson(Map<String, dynamic> json) => WeatherInfo(
+  factory WeatherInfoModel.fromJson(Map<String, dynamic> json) => WeatherInfoModel(
     coord: Coord.fromJson(json["coord"]),
-    weather: List<Weather>.from(json["weather"].map((x) => Weather.fromJson(x))),
+    weather: json["weather"] == null ? [] : List<Weather>.from(json["weather"]!.map((x) => Weather.fromJson(x))),
     base: json["base"],
     main: Main.fromJson(json["main"]),
     visibility: json["visibility"],
-    wind: Wind.fromJson(json["wind"]),
-    rain: Rain.fromJson(json["rain"]),
-    clouds: Clouds.fromJson(json["clouds"]),
+    wind: json["wind"] == null ? null : Wind.fromJson(json["wind"]),
+    rain: json["rain"] == null ? null : Rain.fromJson(json["rain"]),
+    clouds: json["clouds"] == null ? null : Clouds.fromJson(json["clouds"]),
     dt: json["dt"],
     sys: Sys.fromJson(json["sys"]),
     timezone: json["timezone"],
@@ -55,16 +55,16 @@ class WeatherInfo {
   );
 
   Map<String, dynamic> toJson() => {
-    "coord": coord.toJson(),
-    "weather": List<dynamic>.from(weather.map((x) => x.toJson())),
+    "coord": coord?.toJson(),
+    "weather": weather == null ? [] : List<dynamic>.from(weather!.map((x) => x.toJson())),
     "base": base,
-    "main": main.toJson(),
+    "main": main?.toJson(),
     "visibility": visibility,
-    "wind": wind.toJson(),
-    "rain": rain.toJson(),
-    "clouds": clouds.toJson(),
+    "wind": wind?.toJson(),
+    "rain": rain?.toJson(),
+    "clouds": clouds?.toJson(),
     "dt": dt,
-    "sys": sys.toJson(),
+    "sys": sys?.toJson(),
     "timezone": timezone,
     "id": id,
     "name": name,
@@ -73,10 +73,10 @@ class WeatherInfo {
 }
 
 class Clouds {
-  int all;
+  int? all;
 
   Clouds({
-    required this.all,
+    this.all,
   });
 
   factory Clouds.fromRawJson(String str) => Clouds.fromJson(json.decode(str));
@@ -93,12 +93,12 @@ class Clouds {
 }
 
 class Coord {
-  double lon;
-  double lat;
+  double? lon;
+  double? lat;
 
   Coord({
-    required this.lon,
-    required this.lat,
+    this.lon,
+    this.lat,
   });
 
   factory Coord.fromRawJson(String str) => Coord.fromJson(json.decode(str));
@@ -117,24 +117,24 @@ class Coord {
 }
 
 class Main {
-  double temp;
-  double feelsLike;
-  double tempMin;
-  double tempMax;
-  int pressure;
-  int humidity;
-  int seaLevel;
-  int grndLevel;
+  double? temp;
+  double? feelsLike;
+  double? tempMin;
+  double? tempMax;
+  int? pressure;
+  int? humidity;
+  int? seaLevel;
+  int? grndLevel;
 
   Main({
-    required this.temp,
-    required this.feelsLike,
-    required this.tempMin,
-    required this.tempMax,
-    required this.pressure,
-    required this.humidity,
-    required this.seaLevel,
-    required this.grndLevel,
+    this.temp,
+    this.feelsLike,
+    this.tempMin,
+    this.tempMax,
+    this.pressure,
+    this.humidity,
+    this.seaLevel,
+    this.grndLevel,
   });
 
   factory Main.fromRawJson(String str) => Main.fromJson(json.decode(str));
@@ -165,10 +165,10 @@ class Main {
 }
 
 class Rain {
-  double the1H;
+  double? the1H;
 
   Rain({
-    required this.the1H,
+    this.the1H,
   });
 
   factory Rain.fromRawJson(String str) => Rain.fromJson(json.decode(str));
@@ -185,18 +185,18 @@ class Rain {
 }
 
 class Sys {
-  int type;
-  int id;
-  String country;
-  int sunrise;
-  int sunset;
+  int? type;
+  int? id;
+  String? country;
+  int? sunrise;
+  int? sunset;
 
   Sys({
-    required this.type,
-    required this.id,
-    required this.country,
-    required this.sunrise,
-    required this.sunset,
+    this.type,
+    this.id,
+    this.country,
+    this.sunrise,
+    this.sunset,
   });
 
   factory Sys.fromRawJson(String str) => Sys.fromJson(json.decode(str));
@@ -253,14 +253,14 @@ class Weather {
 }
 
 class Wind {
-  double speed;
-  int deg;
-  double gust;
+  double? speed;
+  int? deg;
+  double? gust;
 
   Wind({
-    required this.speed,
-    required this.deg,
-    required this.gust,
+    this.speed,
+    this.deg,
+    this.gust,
   });
 
   factory Wind.fromRawJson(String str) => Wind.fromJson(json.decode(str));
