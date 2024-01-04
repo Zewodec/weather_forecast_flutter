@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:location/location.dart';
-import 'package:weather_forecast/core/api_config.dart';
 import 'package:weather_forecast/core/theme/text_theme.dart';
 import 'package:weather_forecast/core/theme/theme.dart';
-import 'package:weather_forecast/features/weather_info/data/models/weather_info_model.dart';
 import 'package:weather_forecast/features/weather_info/data/repositories/weather_info_repository.dart';
 import 'package:weather_forecast/features/weather_info/presentation/cubit/weather_info_cubit.dart';
 import 'package:weather_forecast/features/weather_info/presentation/widgets/get_weather_by_city_widget.dart';
+import 'package:weather_forecast/features/weather_info/presentation/widgets/loaded_weather_data_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -52,176 +51,111 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: BlocConsumer<WeatherInfoCubit, WeatherInfoState>(
-            // bloc: weatherInfoCubit,
-            listener: (context, state) {
-              // Show error message if error occurred
-              if (state is WeatherInfoError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.error,
-                        style: bodysmall.copyWith(
-                            color: Theme.of(context).colorScheme.onError)),
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                );
-              }
-            },
-            builder: (context, state) {
-              // Show basic window on Initial state
-              if (state is WeatherInfoInitial) {
-                return GetWeatherByCityWidget(cityTextController: _cityTextController);
-              } else if (state is WeatherInfoLoading) {
-                // Show loading indicator when loading
-                return const Center(child: CircularProgressIndicator());
-              } else if (state is WeatherInfoLoaded) {
-                // Show loaded weather info
-                return _buildLoadedWeatherInfoWindow(state.weatherInfoModel);
-              } else {
-                // Show basic window on other states (error state also)
-                return GetWeatherByCityWidget(cityTextController: _cityTextController);
-              }
-            },
-          ),
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: BlocBuilder<WeatherInfoCubit, WeatherInfoState>(
-        builder: (context, state) {
-          if (state is WeatherInfoLoaded){
-            return FloatingActionButton(
-              onPressed: () {
-                // Go to input city name window
-                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
-                  _cityTextController.clear();
-              },
-              tooltip: 'Дізнатись погоду в іншому місті',
-              child: const Icon(Icons.search),
-            );
-          } else {
-            return FloatingActionButton(
-              onPressed: () async {
-                context.read<WeatherInfoCubit>().emit(WeatherInfoLoading());  // Show loading state
-                LocationData? location = await getUserLocationData(context);  // Get user location data
-                if (LocationData != null) { // If location data is not null - get weather info
-                  _cityTextController.clear();
-                  context.read<WeatherInfoCubit>().getWeatherInfoOfLocation(
-                      location?.latitude, location?.longitude);
-                } else {  // If location data is null - show error message
-                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
-                  Fluttertoast.showToast(
-                      msg: "Не вдалося отримати дані про місцезнаходження",
-                      toastLength: Toast.LENGTH_LONG,
-                      gravity: ToastGravity.BOTTOM,
-                      timeInSecForIosWeb: 1,
-                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                      textColor: Theme.of(context).colorScheme.onErrorContainer);
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: BlocConsumer<WeatherInfoCubit, WeatherInfoState>(
+              // bloc: weatherInfoCubit,
+              listener: (context, state) {
+                // Show error message if error occurred
+                if (state is WeatherInfoError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.error,
+                          style: bodysmall.copyWith(
+                              color: Theme.of(context).colorScheme.onError)),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
                 }
               },
-              tooltip: 'Дізнатись погоду по моєму місцезнаходженню',
-              child: const Icon(Icons.my_location),
-            );
-          }
-        },
-      )
-    );
-  }
-
-  /// Window with basic weather info
-  Widget _buildLoadedWeatherInfoWindow(WeatherInfoModel weatherInfo) => Center(
-        child: Container(
-          height: 550,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: Theme.of(context).colorScheme.tertiaryContainer,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Show city name
-              Text(
-                  _cityTextController.text != ""
-                      ? _cityTextController.text
-                      : weatherInfo.name,
-                  style: displaysmall.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 12),
-              // Show weather icon
-              Image.network(iconURL(weatherInfo.weather[0].icon)),
-              const SizedBox(height: 12),
-              // Show weather description
-              Text(weatherInfo.weather[0].description,
-                  style: headlinemedium.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 20),
-              // Show temperature
-              Text("${weatherInfo.main.temp}°C",
-                  style: headlinelarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 14),
-              // Show temperature as feels like
-              Text("Відчувається як ${weatherInfo.main.feelsLike}°C",
-                  style: titlemedium.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 14),
-              // Show visibility distance
-              Text("Видимість ${weatherInfo.visibility / 1000} км",
-                  style: titlesmall.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 14),
-              // Show last time of weather info update
-              Text(
-                  "Час оновлення: ${DateTime.fromMillisecondsSinceEpoch(weatherInfo.dt * 1000).toLocal()}",
-                  style: bodymedium.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onTertiaryContainer)),
-              const SizedBox(height: 20),
-              // Button to make new request
-              OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                        color:
-                            Theme.of(context).colorScheme.onTertiaryContainer),
-                  ),
-                  onPressed: () {
-                    // Clear text field and emit initial state
-                    context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
-                    _cityTextController.clear();
-                  },
-                  child: Text("Зробити новий запит",
-                      style: bodymedium.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onTertiaryContainer))),
-            ],
+              builder: (context, state) {
+                // Show basic window on Initial state
+                if (state is WeatherInfoInitial) {
+                  return GetWeatherByCityWidget(
+                      cityTextController: _cityTextController);
+                } else if (state is WeatherInfoLoading) {
+                  // Show loading indicator when loading
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is WeatherInfoLoaded) {
+                  // Show loaded weather info
+                  return LoadedWeatherDataWidget(
+                      cityTextController: _cityTextController,
+                      weatherInfo: state.weatherInfoModel);
+                } else {
+                  // Show basic window on other states (error state also)
+                  return GetWeatherByCityWidget(
+                      cityTextController: _cityTextController);
+                }
+              },
+            ),
           ),
         ),
-      );
+        floatingActionButton: BlocBuilder<WeatherInfoCubit, WeatherInfoState>(
+          builder: (context, state) {
+            if (state is WeatherInfoLoaded) {
+              return FloatingActionButton(
+                onPressed: () {
+                  // Go to input city name window
+                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
+                  _cityTextController.clear();
+                },
+                tooltip: 'Дізнатись погоду в іншому місті',
+                child: const Icon(Icons.search),
+              );
+            } else {
+              return FloatingActionButton(
+                onPressed: () async {
+                  context
+                      .read<WeatherInfoCubit>()
+                      .emit(WeatherInfoLoading()); // Show loading state
+                  LocationData? location = await getUserLocationData(
+                      context); // Get user location data
+                  if (LocationData != null) {
+                    // If location data is not null - get weather info
+                    _cityTextController.clear();
+                    context.read<WeatherInfoCubit>().getWeatherInfoOfLocation(
+                        location?.latitude, location?.longitude);
+                  } else {
+                    // If location data is null - show error message
+                    context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
+                    Fluttertoast.showToast(
+                        msg: "Не вдалося отримати дані про місцезнаходження",
+                        toastLength: Toast.LENGTH_LONG,
+                        gravity: ToastGravity.BOTTOM,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.errorContainer,
+                        textColor:
+                            Theme.of(context).colorScheme.onErrorContainer);
+                  }
+                },
+                tooltip: 'Дізнатись погоду по моєму місцезнаходженню',
+                child: const Icon(Icons.my_location),
+              );
+            }
+          },
+        ));
+  }
 }
 
+/// Function for getting user location data
 Future<LocationData?> getUserLocationData(BuildContext context) async {
   Location location = Location();
 
   bool serviceEnabled;
   PermissionStatus permissionGranted;
 
+  // Check if location service is enabled
   serviceEnabled = await location.serviceEnabled();
   if (!serviceEnabled) {
     serviceEnabled = await location.requestService();
     if (!serviceEnabled) {
+      // If service is not enabled - show error message
       Fluttertoast.showToast(
           msg: "Сервіс геолокації не включено!",
           toastLength: Toast.LENGTH_LONG,
@@ -233,10 +167,12 @@ Future<LocationData?> getUserLocationData(BuildContext context) async {
     }
   }
 
+  // Check if location permission is granted
   permissionGranted = await location.hasPermission();
   if (permissionGranted == PermissionStatus.denied) {
     permissionGranted = await location.requestPermission();
     if (permissionGranted != PermissionStatus.granted) {
+      // If permission is not granted - show error message
       Fluttertoast.showToast(
           msg: "Доступ до геолокації не надано!",
           toastLength: Toast.LENGTH_LONG,
