@@ -8,11 +8,13 @@ part 'weather_info_state.dart';
 class WeatherInfoCubit extends Cubit<WeatherInfoState> {
   WeatherInfoCubit(this.WeatherInfoRepository) : super(WeatherInfoInitial());
 
+  /// Repository for getting weather info
   final WeatherInfoRepository;
 
   Future<void> getWeatherInfoOfCity(String city) async {
     emit(WeatherInfoLoading());
     final weatherInfo = await WeatherInfoRepository.getWeatherInfoOfCity(city);
+    await Future.delayed(const Duration(milliseconds: 500));
     if (weatherInfo.containsKey('error')) {
       emit(WeatherInfoError(weatherInfo['error']));
     } else {
@@ -20,9 +22,15 @@ class WeatherInfoCubit extends Cubit<WeatherInfoState> {
     }
   }
 
-  Future<void> getWeatherInfoOfLocation(double lat, double lon) async {
+  Future<void> getWeatherInfoOfLocation(double? lat, double? lon) async {
+    if (lat == null || lon == null) {
+      emit(WeatherInfoError('Не вдалося отримати дані про місцезнаходження'));
+      return;
+    }
+
     emit(WeatherInfoLoading());
     final weatherInfo = await WeatherInfoRepository.getWeatherInfoOfLocation(lat, lon);
+    await Future.delayed(const Duration(milliseconds: 500));
     if (weatherInfo.containsKey('error')) {
       emit(WeatherInfoError(weatherInfo['error']));
     } else {

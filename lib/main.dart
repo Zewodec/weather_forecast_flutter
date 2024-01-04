@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:location/location.dart';
 import 'package:weather_forecast/core/api_config.dart';
 import 'package:weather_forecast/core/theme/text_theme.dart';
 import 'package:weather_forecast/core/theme/theme.dart';
 import 'package:weather_forecast/features/weather_info/data/models/weather_info_model.dart';
 import 'package:weather_forecast/features/weather_info/data/repositories/weather_info_repository.dart';
 import 'package:weather_forecast/features/weather_info/presentation/cubit/weather_info_cubit.dart';
-import 'package:weather_forecast/features/weather_info/presentation/cubit/weather_info_cubit.dart';
+import 'package:weather_forecast/features/weather_info/presentation/widgets/get_weather_by_city_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,14 +19,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Weather Forecast',
-      theme: MaterialTheme(textTheme)
-          .theme(MaterialTheme.lightMediumContrastScheme().toColorScheme()),
-      routes: <String, WidgetBuilder>{
-        '/': (BuildContext context) =>
-            const MyHomePage(title: 'Current Weather Forecast'),
-      },
+    return BlocProvider<WeatherInfoCubit>(
+      create: (context) => WeatherInfoCubit(WeatherInfoRepository()),
+      child: MaterialApp(
+        title: 'Weather Forecast',
+        theme: MaterialTheme(textTheme)
+            .theme(MaterialTheme.lightMediumContrastScheme().toColorScheme()),
+        darkTheme: MaterialTheme(textTheme)
+            .theme(MaterialTheme.darkScheme().toColorScheme()),
+        routes: <String, WidgetBuilder>{
+          '/': (BuildContext context) =>
+              const MyHomePage(title: 'Current Weather Forecast'),
+        },
+      ),
     );
   }
 }
@@ -39,8 +46,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Initiate cubit and text controller
-  WeatherInfoCubit weatherInfoCubit = WeatherInfoCubit(WeatherInfoRepository());
+  // Initiate text controller
   final TextEditingController _cityTextController = TextEditingController();
 
   @override
@@ -54,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Padding(
           padding: const EdgeInsets.all(14.0),
           child: BlocConsumer<WeatherInfoCubit, WeatherInfoState>(
-            bloc: weatherInfoCubit,
+            // bloc: weatherInfoCubit,
             listener: (context, state) {
               // Show error message if error occurred
               if (state is WeatherInfoError) {
@@ -71,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (context, state) {
               // Show basic window on Initial state
               if (state is WeatherInfoInitial) {
-                return _buildInitialWindow();
+                return GetWeatherByCityWidget(cityTextController: _cityTextController);
               } else if (state is WeatherInfoLoading) {
                 // Show loading indicator when loading
                 return const Center(child: CircularProgressIndicator());
@@ -80,37 +86,52 @@ class _MyHomePageState extends State<MyHomePage> {
                 return _buildLoadedWeatherInfoWindow(state.weatherInfoModel);
               } else {
                 // Show basic window on other states (error state also)
-                return _buildInitialWindow();
+                return GetWeatherByCityWidget(cityTextController: _cityTextController);
               }
             },
           ),
         ),
       ),
+      floatingActionButton: BlocBuilder<WeatherInfoCubit, WeatherInfoState>(
+        builder: (context, state) {
+          if (state is WeatherInfoLoaded){
+            return FloatingActionButton(
+              onPressed: () {
+                // Go to input city name window
+                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
+                  _cityTextController.clear();
+              },
+              tooltip: 'Дізнатись погоду в іншому місті',
+              child: const Icon(Icons.search),
+            );
+          } else {
+            return FloatingActionButton(
+              onPressed: () async {
+                context.read<WeatherInfoCubit>().emit(WeatherInfoLoading());  // Show loading state
+                LocationData? location = await getUserLocationData(context);  // Get user location data
+                if (LocationData != null) { // If location data is not null - get weather info
+                  _cityTextController.clear();
+                  context.read<WeatherInfoCubit>().getWeatherInfoOfLocation(
+                      location?.latitude, location?.longitude);
+                } else {  // If location data is null - show error message
+                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
+                  Fluttertoast.showToast(
+                      msg: "Не вдалося отримати дані про місцезнаходження",
+                      toastLength: Toast.LENGTH_LONG,
+                      gravity: ToastGravity.BOTTOM,
+                      timeInSecForIosWeb: 1,
+                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                      textColor: Theme.of(context).colorScheme.onErrorContainer);
+                }
+              },
+              tooltip: 'Дізнатись погоду по моєму місцезнаходженню',
+              child: const Icon(Icons.my_location),
+            );
+          }
+        },
+      )
     );
   }
-
-  /// Window with text field for city name input
-  Widget _buildInitialWindow() => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Введіть місто для отримання інформації про погоду",
-                style: bodymedium),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _cityTextController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Місто',
-              ),
-              onSubmitted: (value) {
-                // Get weather info on submit button on keyboard
-                weatherInfoCubit.getWeatherInfoOfCity(value.trim());
-              },
-            ),
-          ],
-        ),
-      );
 
   /// Window with basic weather info
   Widget _buildLoadedWeatherInfoWindow(WeatherInfoModel weatherInfo) => Center(
@@ -125,7 +146,10 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Show city name
-              Text(_cityTextController.text,
+              Text(
+                  _cityTextController.text != ""
+                      ? _cityTextController.text
+                      : weatherInfo.name,
                   style: displaysmall.copyWith(
                       color:
                           Theme.of(context).colorScheme.onTertiaryContainer)),
@@ -162,7 +186,8 @@ class _MyHomePageState extends State<MyHomePage> {
               Text(
                   "Час оновлення: ${DateTime.fromMillisecondsSinceEpoch(weatherInfo.dt * 1000).toLocal()}",
                   style: bodymedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface)),
+                      color:
+                          Theme.of(context).colorScheme.onTertiaryContainer)),
               const SizedBox(height: 20),
               // Button to make new request
               OutlinedButton(
@@ -173,7 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   onPressed: () {
                     // Clear text field and emit initial state
-                    weatherInfoCubit.emit(WeatherInfoInitial());
+                    context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
                     _cityTextController.clear();
                   },
                   child: Text("Зробити новий запит",
@@ -185,4 +210,43 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       );
+}
+
+Future<LocationData?> getUserLocationData(BuildContext context) async {
+  Location location = Location();
+
+  bool serviceEnabled;
+  PermissionStatus permissionGranted;
+
+  serviceEnabled = await location.serviceEnabled();
+  if (!serviceEnabled) {
+    serviceEnabled = await location.requestService();
+    if (!serviceEnabled) {
+      Fluttertoast.showToast(
+          msg: "Сервіс геолокації не включено!",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          textColor: Theme.of(context).colorScheme.onErrorContainer);
+      return null;
+    }
+  }
+
+  permissionGranted = await location.hasPermission();
+  if (permissionGranted == PermissionStatus.denied) {
+    permissionGranted = await location.requestPermission();
+    if (permissionGranted != PermissionStatus.granted) {
+      Fluttertoast.showToast(
+          msg: "Доступ до геолокації не надано!",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          textColor: Theme.of(context).colorScheme.onErrorContainer);
+      return null;
+    }
+  }
+
+  return await location.getLocation();
 }
