@@ -9,6 +9,8 @@ import 'package:weather_forecast/features/weather_info/presentation/cubit/weathe
 import 'package:weather_forecast/features/weather_info/presentation/widgets/get_weather_by_city_widget.dart';
 import 'package:weather_forecast/features/weather_info/presentation/widgets/loaded_weather_data_widget.dart';
 
+import 'features/weather_info/presentation/pages/weather_details_page.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -26,10 +28,7 @@ class MyApp extends StatelessWidget {
             .theme(MaterialTheme.lightMediumContrastScheme().toColorScheme()),
         darkTheme: MaterialTheme(textTheme)
             .theme(MaterialTheme.darkScheme().toColorScheme()),
-        routes: <String, WidgetBuilder>{
-          '/': (BuildContext context) =>
-              const MyHomePage(title: 'Current Weather Forecast'),
-        },
+        home: const MyHomePage(title: 'Current Weather Forecast'),
       ),
     );
   }
@@ -101,8 +100,8 @@ class _MyHomePageState extends State<MyHomePage> {
               return FloatingActionButton(
                 onPressed: () {
                   // Go to input city name window
-                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
                   _cityTextController.clear();
+                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
                 },
                 tooltip: 'Дізнатись погоду в іншому місті',
                 child: const Icon(Icons.search),
@@ -110,6 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
             } else {
               return FloatingActionButton(
                 onPressed: () async {
+                    _cityTextController.clear();
                   context
                       .read<WeatherInfoCubit>()
                       .emit(WeatherInfoLoading()); // Show loading state
@@ -117,7 +117,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       context); // Get user location data
                   if (LocationData != null) {
                     // If location data is not null - get weather info
-                    _cityTextController.clear();
                     context.read<WeatherInfoCubit>().getWeatherInfoOfLocation(
                         location?.latitude, location?.longitude);
                   } else {

@@ -5,6 +5,7 @@ import 'package:weather_forecast/core/theme/text_theme.dart';
 import '../../../../core/api_config.dart';
 import '../../data/models/weather_info_model.dart';
 import '../cubit/weather_info_cubit.dart';
+import '../pages/weather_details_page.dart';
 
 /// Window with basic weather info
 class LoadedWeatherDataWidget extends StatelessWidget {
@@ -79,10 +80,10 @@ class LoadedWeatherDataWidget extends StatelessWidget {
                 ),
                 onPressed: () {
                   // Clear text field and emit initial state
-                  context.read<WeatherInfoCubit>().emit(WeatherInfoInitial());
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => WeatherDetailsPage(cityTextController: cityTextController,)));
                   cityTextController.clear();
                 },
-                child: Text("Зробити новий запит",
+                child: Text("Детальніше",
                     style: bodymedium.copyWith(
                         color: Theme.of(context)
                             .colorScheme

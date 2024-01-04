@@ -6,7 +6,7 @@ class WeatherInfoModel {
   String? base;
   Main main;
   int visibility;
-  Wind? wind;
+  Wind wind;
   Rain? rain;
   Clouds? clouds;
   int dt;
@@ -22,7 +22,7 @@ class WeatherInfoModel {
     this.base,
     required this.main,
     required this.visibility,
-    this.wind,
+    required this.wind,
     this.rain,
     this.clouds,
     required this.dt,
@@ -43,7 +43,7 @@ class WeatherInfoModel {
     base: json["base"],
     main: Main.fromJson(json["main"]),
     visibility: json["visibility"],
-    wind: json["wind"] == null ? null : Wind.fromJson(json["wind"]),
+    wind: Wind.fromJson(json["wind"]),
     rain: json["rain"] == null ? null : Rain.fromJson(json["rain"]),
     clouds: json["clouds"] == null ? null : Clouds.fromJson(json["clouds"]),
     dt: json["dt"],
@@ -253,14 +253,14 @@ class Weather {
 }
 
 class Wind {
-  double? speed;
-  int? deg;
-  double? gust;
+  double speed;
+  int deg;
+  double gust;
 
   Wind({
-    this.speed,
-    this.deg,
-    this.gust,
+    required this.speed,
+    required this.deg,
+    required this.gust,
   });
 
   factory Wind.fromRawJson(String str) => Wind.fromJson(json.decode(str));
